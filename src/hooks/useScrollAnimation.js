@@ -11,7 +11,10 @@ export function useScrollAnimation(trigger) {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('in-view');
-                    observer.unobserve(entry.target); // Trigger only once
+                } else {
+                    // Remover la clase cuando sale de la vista para que la animación
+                    // vuelva a ocurrir cuando el usuario haga scroll de regreso.
+                    entry.target.classList.remove('in-view');
                 }
             });
         }, observerOptions);
