@@ -1,346 +1,261 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, ArrowDown } from 'lucide-react';
+
+const quickReplies = [
+    "¿Qué servicios ofrecen?",
+    "Quiero una demo",
+    "¿Cuánto cuesta?",
+    "Hablar con un humano",
+];
 
 export default function ChatAssistant({ isOpen, toggleChat }) {
     const [messages, setMessages] = useState([
-        { id: 1, text: "¡Hola! Soy el asistente virtual de REDPY. ¿En qué puedo ayudarte a potenciar tu Pyme hoy?", sender: 'bot' }
+        { id: 1, text: "¡Hola! Soy el asistente virtual de REDPY AI. ¿En qué puedo ayudarte a potenciar tu Pyme hoy?", sender: 'bot', time: new Date() }
     ]);
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [showScrollBtn, setShowScrollBtn] = useState(false);
     const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const inputRef = useRef(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (smooth = true) => {
+        messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
     };
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, isOpen]);
+    }, [messages]);
 
-    const handleSendMessage = (e) => {
-        e.preventDefault();
-        if (!inputValue.trim()) return;
+    useEffect(() => {
+        if (isOpen) {
+            scrollToBottom(false);
+            setTimeout(() => inputRef.current?.focus(), 300);
+        }
+    }, [isOpen]);
 
-        // Add user message
-        const newUserMsg = { id: Date.now(), text: inputValue, sender: 'user' };
+    // Body scroll lock on mobile when chat is open
+    useEffect(() => {
+        if (isOpen && window.innerWidth < 640) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen]);
+
+    const handleScroll = () => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+        setShowScrollBtn(!atBottom);
+    };
+
+    const formatTime = (date) => {
+        return date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const addBotResponse = (text) => {
+        setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            text,
+            sender: 'bot',
+            time: new Date()
+        }]);
+        setIsTyping(false);
+    };
+
+    const sendMessage = (text) => {
+        if (!text.trim()) return;
+
+        const newUserMsg = { id: Date.now(), text: text.trim(), sender: 'user', time: new Date() };
         setMessages(prev => [...prev, newUserMsg]);
         setInputValue("");
         setIsTyping(true);
 
-        // Simulate bot response
         setTimeout(() => {
             const botResponses = [
-                "¡Excelente pregunta! En REDPY nos especializamos en eso.",
-                "Podemos automatizar ese proceso para ahorrarte horas de trabajo.",
-                "Esa es una gran oportunidad para implementar IA en tu negocio.",
-                "¿Te gustaría agendar una demo corta para verlo en acción?",
-                "Nuestros agentes virtuales pueden manejar eso 24/7."
+                "¡Excelente pregunta! En REDPY nos especializamos en automatizar procesos para pymes chilenas.",
+                "Podemos automatizar ese proceso para ahorrarte horas de trabajo manual cada semana.",
+                "Esa es una gran oportunidad para implementar IA en tu negocio. ¿Te cuento más?",
+                "¿Te gustaría agendar una demo de 15 minutos para verlo en acción? Es sin costo.",
+                "Nuestros agentes virtuales pueden manejar eso 24/7 sin que pierdas un solo cliente."
             ];
-            const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-
-            setMessages(prev => [...prev, {
-                id: Date.now() + 1,
-                text: randomResponse,
-                sender: 'bot'
-            }]);
-            setIsTyping(false);
-        }, 1500);
+            addBotResponse(botResponses[Math.floor(Math.random() * botResponses.length)]);
+        }, 1200 + Math.random() * 800);
     };
 
+    const handleSendMessage = (e) => {
+        e.preventDefault();
+        sendMessage(inputValue);
+    };
+
+    const handleQuickReply = (text) => {
+        sendMessage(text);
+    };
+
+    const showQuickReplies = messages.length <= 2 && !isTyping;
+
     return (
-        <div className="chat-widget">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-[1000] font-sans">
             {/* Chat Window */}
-            <div className={`chat-window ${isOpen ? 'open' : ''}`}>
-                <div className="chat-header">
-                    <div className="chat-header-info">
-                        <div className="chat-avatar">
-                            <Sparkles size={18} />
+            <div className={`
+                fixed inset-0 sm:inset-auto sm:absolute sm:bottom-0 sm:right-0
+                w-full sm:w-[380px] md:w-[400px]
+                h-full sm:h-[min(580px,85vh)]
+                bg-white sm:rounded-2xl shadow-2xl shadow-slate-900/20
+                flex flex-col overflow-hidden
+                origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+                ${isOpen
+                    ? 'scale-100 opacity-100 pointer-events-auto translate-y-0'
+                    : 'sm:scale-95 opacity-0 pointer-events-none sm:translate-y-4 translate-y-full'}
+            `}>
+
+                {/* Header */}
+                <div className="relative p-4 sm:p-5 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex justify-between items-center shrink-0 overflow-hidden">
+                    {/* Subtle pattern */}
+                    <div className="absolute inset-0 bg-[radial-gradient(#475569_0.5px,transparent_0.5px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
+                    {/* Glow */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div className="relative flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 border border-blue-400/20">
+                            <Bot size={20} />
                         </div>
                         <div>
-                            <h4>Asistente REDPY</h4>
-                            <span className="status-indicator">En línea</span>
+                            <h4 className="m-0 text-sm font-bold tracking-tight">Asistente REDPY</h4>
+                            <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full block shadow-sm shadow-emerald-400/50"></span>
+                                En línea ahora
+                            </span>
                         </div>
                     </div>
-                    <button className="close-btn" onClick={toggleChat}>
-                        <X size={18} />
+                    <button
+                        className="relative bg-white/10 hover:bg-white/20 border-none text-white cursor-pointer flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                        onClick={toggleChat}
+                        aria-label="Cerrar chat"
+                    >
+                        <X size={16} />
                     </button>
                 </div>
 
-                <div className="chat-messages">
+                {/* Messages Area */}
+                <div
+                    ref={messagesContainerRef}
+                    onScroll={handleScroll}
+                    className="flex-1 px-4 py-5 overflow-y-auto flex flex-col gap-3 bg-slate-50 relative"
+                >
                     {messages.map((msg) => (
-                        <div key={msg.id} className={`message ${msg.sender === 'user' ? 'user-message' : 'bot-message'}`}>
-                            {msg.text}
+                        <div key={msg.id} className={`flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-[fadeIn_0.3s_ease]`}>
+                            {/* Avatar */}
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                                msg.sender === 'user'
+                                    ? 'bg-blue-100 text-blue-600'
+                                    : 'bg-slate-200 text-slate-600'
+                            }`}>
+                                {msg.sender === 'user'
+                                    ? <User size={14} strokeWidth={2} />
+                                    : <Bot size={14} strokeWidth={2} />
+                                }
+                            </div>
+                            {/* Bubble */}
+                            <div className="flex flex-col gap-1 max-w-[75%]">
+                                <div className={`px-3.5 py-2.5 text-[0.875rem] leading-relaxed ${
+                                    msg.sender === 'user'
+                                        ? 'bg-blue-600 text-white rounded-2xl rounded-tr-md shadow-sm shadow-blue-600/10'
+                                        : 'bg-white text-slate-700 rounded-2xl rounded-tl-md shadow-sm border border-slate-100'
+                                }`}>
+                                    {msg.text}
+                                </div>
+                                <span className={`text-[0.65rem] text-slate-400 px-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                                    {formatTime(msg.time)}
+                                </span>
+                            </div>
                         </div>
                     ))}
+
+                    {/* Typing Indicator */}
                     {isTyping && (
-                        <div className="message bot-message typing-indicator">
-                            <span></span><span></span><span></span>
+                        <div className="flex gap-2 animate-[fadeIn_0.3s_ease]">
+                            <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center shrink-0 mt-0.5">
+                                <Bot size={14} strokeWidth={2} />
+                            </div>
+                            <div className="bg-white rounded-2xl rounded-tl-md shadow-sm border border-slate-100 px-4 py-3 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]"></span>
+                            </div>
                         </div>
                     )}
+
+                    {/* Quick Replies */}
+                    {showQuickReplies && (
+                        <div className="flex flex-wrap gap-2 mt-2 animate-[fadeIn_0.5s_ease_0.3s_both]">
+                            {quickReplies.map((reply) => (
+                                <button
+                                    key={reply}
+                                    onClick={() => handleQuickReply(reply)}
+                                    className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors cursor-pointer"
+                                >
+                                    {reply}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     <div ref={messagesEndRef} />
                 </div>
 
-                <form className="chat-input-area" onSubmit={handleSendMessage}>
+                {/* Scroll to bottom button */}
+                {showScrollBtn && (
+                    <button
+                        onClick={() => scrollToBottom()}
+                        className="absolute bottom-[4.5rem] left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-slate-700 cursor-pointer transition-all z-10"
+                    >
+                        <ArrowDown size={14} />
+                    </button>
+                )}
+
+                {/* Input Area */}
+                <form className="p-3 sm:p-4 bg-white border-t border-slate-100 flex gap-2 shrink-0" onSubmit={handleSendMessage}>
                     <input
+                        ref={inputRef}
                         type="text"
                         placeholder="Escribe tu consulta..."
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
+                        disabled={isTyping}
+                        className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 outline-none transition-all text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 bg-slate-50 focus:bg-white placeholder:text-slate-400 disabled:opacity-50 text-slate-900"
                     />
-                    <button type="submit" disabled={!inputValue.trim()}>
-                        <Send size={18} />
+                    <button
+                        type="submit"
+                        disabled={!inputValue.trim() || isTyping}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 border-none ${
+                            !inputValue.trim() || isTyping
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                : 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700 shadow-sm shadow-blue-600/20 active:scale-95'
+                        }`}
+                    >
+                        <Send size={16} className={inputValue.trim() ? '-ml-0.5' : ''} />
                     </button>
                 </form>
             </div>
 
             {/* Toggle Button */}
-            <button className={`chat-toggle-btn ${isOpen ? 'hidden' : ''}`} onClick={toggleChat}>
-                <MessageCircle size={28} />
-                <span className="tooltip">¡Habla con nosotros!</span>
+            <button
+                className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-white border border-slate-700/50 shadow-[0_8px_30px_rgba(0,0,0,0.25)] cursor-pointer flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_12px_40px_rgba(0,0,0,0.35)] relative group ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : ''}`}
+                onClick={toggleChat}
+                aria-label="Abrir chat"
+            >
+                {/* Pulse ring */}
+                <span className="absolute inset-0 rounded-2xl border-2 border-blue-400/40 animate-ping pointer-events-none"></span>
+
+                <MessageCircle size={24} />
+
+                {/* Tooltip */}
+                <span className="absolute right-[calc(100%+12px)] bg-slate-900 text-white py-2 px-3.5 rounded-xl text-xs font-semibold shadow-xl opacity-0 translate-x-2 transition-all duration-300 whitespace-nowrap pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 border border-slate-700/50 hidden sm:block">
+                    ¡Habla con nosotros!
+                    <span className="absolute right-[-5px] top-1/2 -translate-y-1/2 w-0 h-0 border-y-[5px] border-y-transparent border-l-[5px] border-l-slate-900"></span>
+                </span>
             </button>
-
-            <style>{`
-                .chat-widget {
-                    position: fixed;
-                    bottom: 2rem;
-                    right: 2rem;
-                    z-index: 1000;
-                    font-family: 'Outfit', sans-serif;
-                }
-
-                .chat-toggle-btn {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, var(--primary), var(--accent));
-                    color: white;
-                    border: none;
-                    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    position: relative;
-                }
-
-                .chat-toggle-btn:hover {
-                    transform: scale(1.1);
-                    box-shadow: 0 15px 35px rgba(37, 99, 235, 0.5);
-                }
-
-                .chat-toggle-btn.hidden {
-                    transform: scale(0);
-                    opacity: 0;
-                    pointer-events: none;
-                }
-
-                .tooltip {
-                    position: absolute;
-                    right: 70px;
-                    background: white;
-                    color: var(--text-main);
-                    padding: 0.5rem 1rem;
-                    border-radius: 8px;
-                    font-size: 0.9rem;
-                    font-weight: 600;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-                    opacity: 0;
-                    transform: translateX(10px);
-                    transition: all 0.3s ease;
-                    white-space: nowrap;
-                    pointer-events: none;
-                }
-
-                .chat-toggle-btn:hover .tooltip {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-
-                .chat-window {
-                    position: absolute;
-                    bottom: 80px;
-                    right: 0;
-                    width: 350px;
-                    height: 500px;
-                    background: white;
-                    border-radius: 20px;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    transform-origin: bottom right;
-                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    transform: scale(0);
-                    opacity: 0;
-                    pointer-events: none;
-                }
-
-                .chat-window.open {
-                    transform: scale(1);
-                    opacity: 1;
-                    pointer-events: all;
-                }
-
-                .chat-header {
-                    padding: 1rem 1.5rem;
-                    background: linear-gradient(135deg, var(--primary), var(--accent));
-                    color: white;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .chat-header-info {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.8rem;
-                }
-
-                .chat-avatar {
-                    width: 35px;
-                    height: 35px;
-                    background: rgba(255,255,255,0.2);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .chat-header h4 {
-                    margin: 0;
-                    font-size: 1rem;
-                    font-weight: 600;
-                }
-
-                .status-indicator {
-                    font-size: 0.75rem;
-                    opacity: 0.9;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.3rem;
-                }
-                
-                .status-indicator::before {
-                    content: '';
-                    width: 6px;
-                    height: 6px;
-                    background: #22c55e;
-                    border-radius: 50%;
-                    display: block;
-                }
-
-                .close-btn {
-                    background: none;
-                    border: none;
-                    color: white;
-                    opacity: 0.7;
-                    cursor: pointer;
-                    display: flex;
-                    transition: opacity 0.2s;
-                }
-
-                .close-btn:hover {
-                    opacity: 1;
-                }
-
-                .chat-messages {
-                    flex: 1;
-                    padding: 1.5rem;
-                    overflow-y: auto;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1rem;
-                    background: #f8fafc;
-                }
-
-                .message {
-                    max-width: 80%;
-                    padding: 0.8rem 1rem;
-                    border-radius: 12px;
-                    font-size: 0.95rem;
-                    line-height: 1.4;
-                }
-
-                .bot-message {
-                    background: white;
-                    color: var(--text-main);
-                    border-top-left-radius: 2px;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-                }
-
-                .user-message {
-                    background: var(--primary);
-                    color: white;
-                    align-self: flex-end;
-                    border-top-right-radius: 2px;
-                    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
-                }
-
-                .typing-indicator span {
-                    display: inline-block;
-                    width: 6px;
-                    height: 6px;
-                    background: #cbd5e1;
-                    border-radius: 50%;
-                    margin: 0 2px;
-                    animation: bounce 1s infinite;
-                }
-
-                .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-                .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-                @keyframes bounce {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-5px); }
-                }
-
-                .chat-input-area {
-                    padding: 1rem;
-                    background: white;
-                    border-top: 1px solid rgba(0,0,0,0.05);
-                    display: flex;
-                    gap: 0.5rem;
-                }
-
-                .chat-input-area input {
-                    flex: 1;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 20px;
-                    padding: 0.6rem 1rem;
-                    font-family: inherit;
-                    font-size: 0.95rem;
-                    outline: none;
-                    transition: border-color 0.2s;
-                }
-
-                .chat-input-area input:focus {
-                    border-color: var(--primary);
-                }
-
-                .chat-input-area button {
-                    background: var(--primary);
-                    color: white;
-                    border: none;
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                }
-
-                .chat-input-area button:disabled {
-                    background: #cbd5e1;
-                    cursor: not-allowed;
-                }
-
-                .chat-input-area button:not(:disabled):hover {
-                    transform: scale(1.05);
-                }
-            `}</style>
         </div>
     );
 }
