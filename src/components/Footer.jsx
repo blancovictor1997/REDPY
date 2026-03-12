@@ -55,7 +55,7 @@ export default function Footer({ openLegalModal }) {
                                     <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 group-hover:border-blue-500/50 group-hover:bg-blue-500/10 transition-colors">
                                         <Phone size={16} className="text-blue-400" />
                                     </div>
-                                    <span>+56 9 1234 5678</span>
+                                    <span>+56 9 87618340</span>
                                 </a>
                             </li>
                             <li>
